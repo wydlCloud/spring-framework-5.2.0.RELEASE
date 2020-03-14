@@ -41,9 +41,9 @@ import org.springframework.util.StringUtils;
  * "classpath:" pseudo-URL.
  *
  * @author Juergen Hoeller
- * @since 10.03.2004
  * @see FileSystemResourceLoader
  * @see org.springframework.context.support.ClassPathXmlApplicationContext
+ * @since 10.03.2004
  */
 public class DefaultResourceLoader implements ResourceLoader {
 
@@ -59,6 +59,7 @@ public class DefaultResourceLoader implements ResourceLoader {
 	 * Create a new DefaultResourceLoader.
 	 * <p>ClassLoader access will happen using the thread context class loader
 	 * at the time of this ResourceLoader's initialization.
+	 *
 	 * @see java.lang.Thread#getContextClassLoader()
 	 */
 	public DefaultResourceLoader() {
@@ -67,8 +68,9 @@ public class DefaultResourceLoader implements ResourceLoader {
 
 	/**
 	 * Create a new DefaultResourceLoader.
+	 *
 	 * @param classLoader the ClassLoader to load class path resources with, or {@code null}
-	 * for using the thread context class loader at the time of actual resource access
+	 *                    for using the thread context class loader at the time of actual resource access
 	 */
 	public DefaultResourceLoader(@Nullable ClassLoader classLoader) {
 		this.classLoader = classLoader;
@@ -89,6 +91,7 @@ public class DefaultResourceLoader implements ResourceLoader {
 	 * Return the ClassLoader to load class path resources with.
 	 * <p>Will get passed to ClassPathResource's constructor for all
 	 * ClassPathResource objects created by this resource loader.
+	 *
 	 * @see ClassPathResource
 	 */
 	@Override
@@ -102,8 +105,9 @@ public class DefaultResourceLoader implements ResourceLoader {
 	 * additional protocols to be handled.
 	 * <p>Any such resolver will be invoked ahead of this loader's standard
 	 * resolution rules. It may therefore also override any default rules.
-	 * @since 4.3
+	 *
 	 * @see #getProtocolResolvers()
+	 * @since 4.3
 	 */
 	public void addProtocolResolver(ProtocolResolver resolver) {
 		Assert.notNull(resolver, "ProtocolResolver must not be null");
@@ -113,6 +117,7 @@ public class DefaultResourceLoader implements ResourceLoader {
 	/**
 	 * Return the collection of currently registered protocol resolvers,
 	 * allowing for introspection as well as modification.
+	 *
 	 * @since 4.3
 	 */
 	public Collection<ProtocolResolver> getProtocolResolvers() {
@@ -121,6 +126,7 @@ public class DefaultResourceLoader implements ResourceLoader {
 
 	/**
 	 * Obtain a cache for the given value type, keyed by {@link Resource}.
+	 *
 	 * @param valueType the value type, e.g. an ASM {@code MetadataReader}
 	 * @return the cache {@link Map}, shared at the {@code ResourceLoader} level
 	 * @since 5.0
@@ -132,14 +138,15 @@ public class DefaultResourceLoader implements ResourceLoader {
 
 	/**
 	 * Clear all resource caches in this resource loader.
-	 * @since 5.0
+	 *
 	 * @see #getResourceCache
+	 * @since 5.0
 	 */
 	public void clearResourceCaches() {
 		this.resourceCaches.clear();
 	}
 
-
+	// 对于取得Resource的具体过程，来进行看一看喽，都是有原因的哦，值得理解和学习
 	@Override
 	public Resource getResource(String location) {
 		Assert.notNull(location, "Location must not be null");
@@ -153,17 +160,21 @@ public class DefaultResourceLoader implements ResourceLoader {
 
 		if (location.startsWith("/")) {
 			return getResourceByPath(location);
-		}
-		else if (location.startsWith(CLASSPATH_URL_PREFIX)) {
+		} else if (location.startsWith(CLASSPATH_URL_PREFIX)) {
+			// 这里处理带有claspath标识的resource
 			return new ClassPathResource(location.substring(CLASSPATH_URL_PREFIX.length()), getClassLoader());
-		}
-		else {
+		} else {
 			try {
 				// Try to parse the location as a URL...
+				// 这里处理URL标识的Resource定位
 				URL url = new URL(location);
 				return (ResourceUtils.isFileURL(url) ? new FileUrlResource(url) : new UrlResource(url));
-			}
-			catch (MalformedURLException ex) {
+			} catch (MalformedURLException ex) {
+				// 如果既不是classpath，也不是url标识的resource定位，则把getResource的重任交给getResourceByPath来解决
+				// 这个方法是一个protected方法，默认的实现是得到一个ClassPathContextResource，这个方法常常会子类来实现
+				// 也就是FileSystemApplicaitonContext
+				// 这个方法返回的是一个FileSystemResource对象，通过这个对象，Spring可以进行相关的I/O操作，完成BeanDefinition的定位和解析。
+				// 到这里其实定位资源的过程就比较清晰了。它实现的就是对path进行解析，然后生成一个FileSystemResource对象并返回
 				// No URL -> resolve as resource path.
 				return getResourceByPath(location);
 			}
@@ -175,6 +186,7 @@ public class DefaultResourceLoader implements ResourceLoader {
 	 * <p>The default implementation supports class path locations. This should
 	 * be appropriate for standalone implementations but can be overridden,
 	 * e.g. for implementations targeted at a Servlet container.
+	 *
 	 * @param path the path to the resource
 	 * @return the corresponding Resource handle
 	 * @see ClassPathResource

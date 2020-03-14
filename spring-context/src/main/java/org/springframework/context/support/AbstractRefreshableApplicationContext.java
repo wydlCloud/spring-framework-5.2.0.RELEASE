@@ -120,16 +120,23 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 * bean factory, shutting down the previous bean factory (if any) and
 	 * initializing a fresh bean factory for the next phase of the context's lifecycle.
 	 */
+	// 被refresh调用
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
+		// 这里判断，如果已经建立了BEANFactory，则销毁并关闭该BeanFactory
 		if (hasBeanFactory()) {
 			destroyBeans();
 			closeBeanFactory();
 		}
+		// 这里是创建并设置持有的DefaultListableBeanFactory的地方同时调用
+		// loadBeanDefinitons再载入BeanDefinition的信息
 		try {
+			// 创建一个factory bean 构建一个ioc容器，供ApplicationContext使用，容器是DefaultListableBeanFactory
 			DefaultListableBeanFactory beanFactory = createBeanFactory();
 			beanFactory.setSerializationId(getId());
 			customizeBeanFactory(beanFactory);
+			// 启动loadBeanDefinitions来载入BeanDefinition，这里其实和编程式的方式来使用ioc容器的方式非常类似
+			// （都是创建ioc容器，启动loadBeanDefinitions加载xml文件，获取bean）
 			loadBeanDefinitions(beanFactory);
 			synchronized (this.beanFactoryMonitor) {
 				this.beanFactory = beanFactory;
@@ -203,6 +210,8 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 * @see org.springframework.beans.factory.support.DefaultListableBeanFactory#setAllowCircularReferences
 	 * @see org.springframework.beans.factory.support.DefaultListableBeanFactory#setAllowRawInjectionDespiteWrapping
 	 */
+	// 这里其实就是再上下文中创建DefaultListableBeanFactory的地方，而getInternalParentBeanFactory()的具体实现可以参看AbstractApplicationContext中的实现
+	// 会根据容器已有的双亲ioc容器的信息来生成DefaultListableBeanFactory的尚勤ioc容器
 	protected DefaultListableBeanFactory createBeanFactory() {
 		return new DefaultListableBeanFactory(getInternalParentBeanFactory());
 	}
@@ -239,6 +248,8 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 * @see org.springframework.beans.factory.support.PropertiesBeanDefinitionReader
 	 * @see org.springframework.beans.factory.xml.XmlBeanDefinitionReader
 	 */
+	// 这里是使用DefaultListableBeanFactory载入bean定义的地方，
+	// 因为允许有多重载入方式，虽然用的最多的是xml定义的形式，这里通过一个抽象函数把具体的实现委托给子类来完成
 	protected abstract void loadBeanDefinitions(DefaultListableBeanFactory beanFactory)
 			throws BeansException, IOException;
 

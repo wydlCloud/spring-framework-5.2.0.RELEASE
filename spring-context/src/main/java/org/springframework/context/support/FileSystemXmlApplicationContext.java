@@ -53,6 +53,17 @@ import org.springframework.lang.Nullable;
  * @see #getResourceByPath
  * @see GenericApplicationContext
  */
+// 这个类是一个支持xml定义BeanDefinition的Application，并且可以指定以文件形式的BeanDefinition的读入，这些文件可以使用文件路径和URL来表示
+// 在测试环境和独立应用环境中，这个Application是非常有用的。
+// 从定位关系图Hierarchy 可以清楚的看到整个BeanDefinition资源定位的过程，这个对BeanDefinition资源定位的过程，最初就是由refresh来出发的。
+// refresh的调用是在构造函数中启动的。
+// 疑问点？
+// 1.FileSystemXmlApplicationContext在什么地方定义了BeanDefinition的读入器BeanDefinitionReader，从而完成BeanDefinition信息的读入呢？
+// 答案：在ioc容器的初始化过程中，BeanDefinition资源定位、读入、注册过程是分开进行的，解耦的体现。可以到	FileSystemXmlApplicationContext的基类中
+// AbstractRefreshableConfigApplicationContext可以从这个了中来看具体的实现
+// 因为从调用链路来看，主要是refresh来进行触发ioc容器进行初始化的，然后进行的步骤是 资源定位-->载入-->注册到ioc容器中
+// refresh方法中调用的obtainFreshBeanFactory方法，然后调用AbstractRefreshableConfigApplicationContext的refreshBeanFactory来进行的读入资源
+// 定位资源主要步骤refreshBeanFactory-->AbstractRefreshableConfigApplicationContext中-->FileSystemResource的getResourceByPath()-->返回文件系统资源
 public class FileSystemXmlApplicationContext extends AbstractXmlApplicationContext {
 
 	/**
@@ -81,6 +92,7 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 	 * @param configLocation file path
 	 * @throws BeansException if context creation failed
 	 */
+	// 这个构造函数允许configLocation包含的是BeanDefinition所在的路径
 	public FileSystemXmlApplicationContext(String configLocation) throws BeansException {
 		this(new String[] {configLocation}, true, null);
 	}
@@ -91,6 +103,7 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 	 * @param configLocations array of file paths
 	 * @throws BeansException if context creation failed
 	 */
+	// 这个构造函数允许configLocation包含多个BeanDefinition的文件路径
 	public FileSystemXmlApplicationContext(String... configLocations) throws BeansException {
 		this(configLocations, true, null);
 	}
@@ -103,6 +116,7 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 	 * @param parent the parent context
 	 * @throws BeansException if context creation failed
 	 */
+	// 这个构造函数在允许configLocation包含多个BeanDefinition的文件路径的同事，还允许执行自己的双亲ioc容器
 	public FileSystemXmlApplicationContext(String[] configLocations, ApplicationContext parent) throws BeansException {
 		this(configLocations, true, parent);
 	}
@@ -132,12 +146,18 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 	 * @throws BeansException if context creation failed
 	 * @see #refresh()
 	 */
+	// 在对象初始化的过程中，调用refresh函数载入BeanDefinition，这个refresh启动了
+	// BeanDefinition的载入过程，bean在ioc容器的注入主要分为资源定位，载入 和注册 ，完全实现解耦来实现
+	// 关于这个类继承了AbstractXmlApplication，关于ioc容器功能相关的实现，都是在FileSystemXMLApplication中来完成的，
 	public FileSystemXmlApplicationContext(
 			String[] configLocations, boolean refresh, @Nullable ApplicationContext parent)
 			throws BeansException {
 
 		super(parent);
+		// 实现了对configuration进行处理，
+		// 主要目的是让所有配置在文件系统中的，以xml文件方式存在的BeanDefinition都能够得到有效的处理。
 		setConfigLocations(configLocations);
+		// refresh来启动Ioc容器的初始化，这个方法是非常重要的，这也是分析容器初始化过程实现的一个重要入口
 		if (refresh) {
 			refresh();
 		}
@@ -153,6 +173,13 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 	 * @return the Resource handle
 	 * @see org.springframework.web.context.support.XmlWebApplicationContext#getResourceByPath
 	 */
+	// 这是应用于文件系统汇总的Resource的实现，通过构造一个FileSystemResource来得到一个在文件系统中定位到的BeanDefinition
+	// 这个getResourceByPath是在BeanDeifition的loadBeanDefinitions中被调用的
+	//loadBeanDefintions采用了模板模式，具体的定位实现实际上由个个子类来完成的
+
+	// 实现getResourceByPath方法，这个方法是一个模板方法，是为读取Resource服务的。
+
+	// 这个方法返回的是一个FileSystemResource对象，通过这个对象，Spring可以进行相关的I/O操作，完成BeanDefinition的定位和解析。
 	@Override
 	protected Resource getResourceByPath(String path) {
 		if (path.startsWith("/")) {
