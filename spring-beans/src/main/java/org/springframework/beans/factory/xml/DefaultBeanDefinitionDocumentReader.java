@@ -302,12 +302,41 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * Process the given bean element, parsing the bean definition
 	 * and registering it with the registry.
 	 */
+	// 得到了documentReader之后，为具体的spring bean的解析过程准备好了数据
+	// 这里是处理BeanDefinition的地方，具体的处理委托给了BeanDefinitionParserDelegate来进行完成，
+	/** 这个类里包含了对各种spring bean定义规则的处理，这个类有时间的话可以进行研究一下？？？？？？？？？？？？？？
+	 * eg:我们最熟悉的bean元素的处理是怎样去完成的，也就是怎么样处理在xml定义文件中出现的<bean></bean>这个最常见的元素信息。
+	 * 在这里还可以看到的就是那些熟悉的BeanDefinition定义的处理，比如 id，name，alias等属性信息。
+	 * 把这些元素的值从xml文件相应的元素的属性中读取出来以后，设置到生成的BeanDefinitionHolder中去。这些属性的解析可能还是比较简单一些的，
+	 * 对于其他元素配置的解析，比如各种Bean的属性配置，通过一个较为复杂的解析过程，这个过程是由parseBeanDefinitionElement来完成的。解析完成以后
+	 * 会把解析结果放到BeanDefinition对象中并设置到BeanDefinitionHolder中去。
+	 * 还有非常重要的一点就是后续的步骤中，
+	 * 1.spring如何解决的循环依赖的问题？？？？？？？
+	 * 2.bean的生命周期的问题？？？？？？？？？？？？
+	 * */
+	// ele对应在spring BeanDefinition中定义的xml元素
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
+		// BeanDefinitionHolder是BeanDefinition对象封装类，封装了BeanDefinition，Bean的名字和别名，用它来完成向spring ioc 容器的注册
+		// 得到这个BeanDefinitionHolder就意味着BeanDefinition是通过BeanDefinitionParseDelegate对xml元素的信息按照spring的bean规则进行
+		// 解析得到的
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 			try {
 				// Register the final decorated instance.
+				// 这里是向ioc容器注册解析得到的BeanDefinition的地方
+				// 深入源码去分析，其实真正存储BeanDefinition的地方就是一个map集合，结构如下
+				/** Map of bean definition objects, keyed by bean name. */
+				/**	private final Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
+				 * key  bean的名称
+				 * value BeanDefinition对象，也就是bean的信息
+				 * 个人理解：是bean一定是Object，但是是Object不一定是bean
+				 * 因为bean拥有了Object并不具备的一些特性，所以可以这么简单去理解
+				 * 这个理解还需要好好去深究？？？？？？？？？？
+				 * 还有一点就是，这个时候才真正的的把BeanDefinition放在了map中，
+				 * 但是还并未真正的进行初始化操作，在这个位置，还并未生成一个真正的对象，bean创建的整个过程还未进行，
+				 * 这个位置只是把BeanDefinition对象放在了map中进行保存而已，之前的那些步骤是是在为解析和封装BeanDefinition做准备
+				 * */
 				BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
 			}
 			catch (BeanDefinitionStoreException ex) {
@@ -315,6 +344,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 						bdHolder.getBeanName() + "'", ele, ex);
 			}
 			// Send registration event.
+			// 在BeanDefinition向ioc容器注册完成以后，发送消息
 			getReaderContext().fireComponentRegistered(new BeanComponentDefinition(bdHolder));
 		}
 	}

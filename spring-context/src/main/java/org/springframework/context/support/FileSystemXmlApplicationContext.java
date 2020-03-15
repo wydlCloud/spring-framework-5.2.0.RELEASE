@@ -157,7 +157,10 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 		// 实现了对configuration进行处理，
 		// 主要目的是让所有配置在文件系统中的，以xml文件方式存在的BeanDefinition都能够得到有效的处理。
 		setConfigLocations(configLocations);
-		// refresh来启动Ioc容器的初始化，这个方法是非常重要的，这也是分析容器初始化过程实现的一个重要入口
+		// refresh来启动Ioc容器的初始化，这个方法是非常重要的，这也是分析容器初始化过程实现的一个重要入口,也是载入BeanDefinition的入口
+		// 这个方法详细的描述了ApplicationContext的初始化过程，eg：BeanFactory的更新，MessageSource和PostProcessor的注册
+		// 整个流程更像是对applicationContext进行初始化的模板或执行提纲，这个执行过程，为Bean的生命周期管理提供了条件。
+		// 其实通过这一系列的调用就能大致的了解应用上下文初始化的主要内容。
 		if (refresh) {
 			refresh();
 		}

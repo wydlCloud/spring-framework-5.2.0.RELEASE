@@ -123,7 +123,9 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	// 被refresh调用
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
-		// 这里判断，如果已经建立了BEANFactory，则销毁并关闭该BeanFactory
+		// 这里判断，如果已经建立了BeanFactory，则销毁并关闭该BeanFactory
+		// 在创建ioc容器之前，如果已经有容器存在，那么需要把已经存在的ioc容器进行销毁和关闭，保证在refresh以后使用的是新建立起来的ioc容器
+		// 在建立好当前的ioc容器以后，开始了对容器的初始化过程，eg:BeanDefinition的载入
 		if (hasBeanFactory()) {
 			destroyBeans();
 			closeBeanFactory();

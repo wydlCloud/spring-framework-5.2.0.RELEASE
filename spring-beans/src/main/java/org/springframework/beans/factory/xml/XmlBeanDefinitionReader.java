@@ -312,6 +312,9 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @return the number of bean definitions found
 	 * @throws BeanDefinitionStoreException in case of loading or parsing errors
 	 */
+	// 在解析中，需要得到代表xml文件的Resource,因为 EncodedResource这个Resource对象封装了对xml文件的I/O操作，
+	// 所以读取器就可以在打开I/O流后得到xml的文件对象。有个这个文件对象，就可以按照Spring的bean定义规则来对这个xml的文档树进行解析。
+	// 这个解析的操作主要是交给BeanDefinitionParserDelegate来处理的
 	public int loadBeanDefinitions(EncodedResource encodedResource) throws BeanDefinitionStoreException {
 		Assert.notNull(encodedResource, "EncodedResource must not be null");
 		if (logger.isTraceEnabled()) {
@@ -327,6 +330,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 			throw new BeanDefinitionStoreException(
 					"Detected cyclic loading of " + encodedResource + " - check your import definitions!");
 		}
+		// 这里得到xml文件，并得到IO的InputStream准备进行读取
 		try {
 			InputStream inputStream = encodedResource.getResource().getInputStream();
 			try {
@@ -386,11 +390,19 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see #doLoadDocument
 	 * @see #registerBeanDefinitions
 	 */
+	// 具体的读取过程可以在doLoadBeanDefinitions方法中找到
+	// 这是从特定的xml文件中实际载入BeanDefinition的地方
 	protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
 			throws BeanDefinitionStoreException {
 
 		try {
+			// 在这里已经读取到了xml文件的Document对象，这个解析过程是由doLoadDocument完成的这个
+			// DocumentLoader是DefaultDocumentLoader，在定义documentLoader的地方创建
+			// 这是获取document对象的过程，有时间可以研究一下一下获取document对象的过程？？？？？？？目前不是太明白
 			Document doc = doLoadDocument(inputSource, resource);
+			// 要关心的重要一步其实真正关心的应该是这一个步骤，更加关心的应该是Spring的BeanDefinition是怎么样按照Spring的语义要求进行解析并转化为容器内部的数据结构的
+			// 这里启动的是对BeanDefinition解析的详细过程，这个解析会使用到Spring的Bean配置规则，
+			// 具体的解析和装配过程是BeanDefinitionDocumentReader来完成的，这一步还对载入的BeanDefinition的数量进行了统计
 			int count = registerBeanDefinitions(doc, resource);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Loaded " + count + " bean definitions from " + resource);
@@ -508,9 +520,17 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see #setDocumentReaderClass
 	 * @see BeanDefinitionDocumentReader#registerBeanDefinitions
 	 */
+	// 在这里记录一下BeanDefinition的载入过程吧，主要是个人理解和阅读书籍来总结的
+	// BeanDefinition的载入主要分成两部分，
+	// 1.通过调用xml的解析器，来进行解析获取document对象，但这些document对象并没有按照spring的规则进行解析和装配
+	// 在完成通用的xml解析之后呢，那就是到了第二步。
+	// 2.此方法主要就是按照spring的bean规则进行解析的过程是在documentReader中来实现的。
+	// 这里的BeanDefinitionDocumentReader
 	public int registerBeanDefinitions(Document doc, Resource resource) throws BeanDefinitionStoreException {
+		// 这一步得到了BeanDefinitionDocumentReader 来对xml的BeanDefinition进行解析
 		BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();
 		int countBefore = getRegistry().getBeanDefinitionCount();
+		// 具体的解析过程在registerBeanDefinitions方法中来完成的
 		documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
 		return getRegistry().getBeanDefinitionCount() - countBefore;
 	}

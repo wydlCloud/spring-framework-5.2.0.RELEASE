@@ -78,16 +78,23 @@ public abstract class AbstractXmlApplicationContext extends AbstractRefreshableC
 	 * @see #initBeanDefinitionReader
 	 * @see #loadBeanDefinitions
 	 */
+	// 此方法的主要流程其实就是分为以下几个步骤：
+	// 1.初始化XmlBeanDefinitionReader读取器
+	// 2.然后在环境中设置这个读取化器
+	// 3.启动读取器来完成BeanDefinition在ioc容器中的载入
 	@Override
 	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throws BeansException, IOException {
 		// Create a new XmlBeanDefinitionReader for the given BeanFactory.
 		// 为给定的BeanFactory创建一个新的XmlBeanDefinitionReader
+		// 创建XmlBeanDefinitionReader,并通过回调设置到BeanFactory中去
 		XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
 
 		// Configure the bean definition reader with this context's
 		// 使用此上下文配置bean定义读取器
 		// resource loading environment.
 		// 资源加载环境
+		// 主要目的是：设置XmlBeanDefinitionReader，为XmlBeanDefinitionReader配置setResourceLoader，
+		// 因为DefaultResourceLoader是父类，所以this可以直接被使用
 		beanDefinitionReader.setEnvironment(this.getEnvironment());
 		beanDefinitionReader.setResourceLoader(this);
 		beanDefinitionReader.setEntityResolver(new ResourceEntityResolver(this));
@@ -96,6 +103,7 @@ public abstract class AbstractXmlApplicationContext extends AbstractRefreshableC
 		// 允许子类提供读取器的自定义初始化
 		// then proceed with actually loading the bean definitions.
 		// 然后继续实际加载bean定义
+		// 这是启动bean定义信息载入的过程
 		initBeanDefinitionReader(beanDefinitionReader);
 		loadBeanDefinitions(beanDefinitionReader);
 	}
@@ -125,10 +133,12 @@ public abstract class AbstractXmlApplicationContext extends AbstractRefreshableC
 	 * @see #getResourcePatternResolver
 	 */
 	protected void loadBeanDefinitions(XmlBeanDefinitionReader reader) throws BeansException, IOException {
+		// 以resource的方式获得配置文件的资源位置
 		Resource[] configResources = getConfigResources();
 		if (configResources != null) {
 			reader.loadBeanDefinitions(configResources);
 		}
+		// 以string形式获得配置文件的位置
 		String[] configLocations = getConfigLocations();
 		if (configLocations != null) {
 			reader.loadBeanDefinitions(configLocations);
