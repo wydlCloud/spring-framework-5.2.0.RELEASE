@@ -512,6 +512,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		return this.applicationListeners;
 	}
 
+	// 看spring 源码最忌讳的就是，debug一步一步进去去看具体的实现，这样的话，整体的一个大致流程脉络都梳理不清楚了，可能会陷入里面
+	// 先搞清楚spring的整体的一个实现脉络，然后对哪方面感兴趣，然后细致查看学习每一步的源码，去研究和分析，这样的话就一步一步比较清晰。
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
 		synchronized (this.startupShutdownMonitor) {
@@ -521,7 +523,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 			// 2、Tell the subclass to refresh the internal bean factory.
 			// 告诉子类refresh内部的bean factory
-			// 在子类中启动refreshBeanFactory()的地方
+			// 在子类中启动refreshBeanFactory()的地方,
+			// 在这个过程中，已经把BeanDefinition对象放入到了BeanDefinitionMap中，这一步仅仅是存储在BeanDefinitionMap中，供初始化创建来进行使用
+
+			// 个人理解：在这一步主要是资源定位，找到资源，并根据不同的读取方式进行解析，
+			// 解析完成之后进行放入到BeanDefinition对象中，然后每一个BeanDefinition对象放到BeanDefinitionMap中，供后续来使用
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// 3、Prepare the bean factory for use in this context.
@@ -546,7 +552,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				initMessageSource();
 
 				// 8、Initialize event multicaster for this context.
-				// 对上下文中的事件机制进行初始化
+				// 对上下文中的事件机制进行初始化，用于事件通知
 				initApplicationEventMulticaster();
 
 				// 9、Initialize other special beans in specific context subclasses.
